@@ -12,9 +12,9 @@ def config():
     resolves them to the actual Function URLs from Key Vault.
     """
     return jsonify({
-        "saveLogUrl":      os.environ.get("SAVE_LOG_URL", ""),
-        "getSummaryUrl":   os.environ.get("GET_SUMMARY_URL", ""),
-        "timerSummaryUrl": os.environ.get("TIMER_SUMMARY_URL", "")
+        "saveLogUrl":  "https://aashrithafunctionapp-gchgcdcxbsbvetcy.canadacentral-01.azurewebsites.net/api/SaveLog",
+        "getSummaryUrl":   "https://aashrithafunctionapp-gchgcdcxbsbvetcy.canadacentral-01.azurewebsites.net/api/GetSummary",
+        "timerSummaryUrl": ""
     })
 
 
