@@ -119,7 +119,7 @@
 <body>
 <div class="container">
 
-  <h2>📋 Employee Work Tracker</h2>
+  <h2> Employee Work Tracker</h2>
   <p class="subtitle">Submit daily work logs and view team summary</p>
 
   <div id="loadingBanner">⏳ Loading configuration...</div>
@@ -197,7 +197,7 @@
 
     } catch (err) {
       document.getElementById("loadingBanner").textContent =
-        "❌ Failed to load config. Check Key Vault and environment variables.";
+        "Failed to load config. Check Key Vault and environment variables.";
       document.getElementById("loadingBanner").style.background = "#fee2e2";
       document.getElementById("loadingBanner").style.color = "#991b1b";
     }
