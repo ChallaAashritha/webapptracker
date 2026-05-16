@@ -1,0 +1,14 @@
+# Python virtual environments
+.venv/
+__pycache__/
+*.pyc
+
+# Azure Functions local settings (has secrets)
+local.settings.json
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

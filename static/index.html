@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Work Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container { width: 100%; max-width: 520px; }
+
+    h2 { font-size: 22px; color: #1e293b; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+    }
+
+    label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+
+    input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111827;
+      outline: none;
+      margin-bottom: 14px;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #3b82f6; }
+
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-blue { background: #3b82f6; color: white; }
+    .btn-gray { background: #e5e7eb; color: #374151; margin-left: 8px; }
+
+    #msg {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      display: none;
+    }
+    #msg.ok  { background: #d1fae5; color: #065f46; display: block; }
+    #msg.err { background: #fee2e2; color: #991b1b; display: block; }
+
+    .stats { display: flex; gap: 10px; margin-bottom: 18px; }
+    .stat {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .stat-num { font-size: 24px; font-weight: 700; color: #3b82f6; }
+    .stat-lbl { font-size: 11px; color: #94a3b8; margin-top: 2px; text-transform: uppercase; }
+
+    .warn-box {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #92400e;
+      margin-top: 14px;
+      display: none;
+    }
+
+    #loadingBanner {
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    #summaryCard { display: none; }
+    #summaryCard.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h2>📋 Employee Work Tracker</h2>
+  <p class="subtitle">Submit daily work logs and view team summary</p>
+
+  <div id="loadingBanner">⏳ Loading configuration...</div>
+
+  <div class="card">
+    <h3>Log Today's Work</h3>
+
+    <div class="row">
+      <div class="field">
+        <label>Employee Name *</label>
+        <input id="empName" type="text" placeholder="e.g. Ravi Kumar" disabled />
+      </div>
+      <div class="field">
+        <label>Employee ID *</label>
+        <input id="empId" type="number" placeholder="e.g. 101" disabled />
+      </div>
+    </div>
+
+    <label>Task Completed *</label>
+    <input id="task" type="text" placeholder="e.g. Fixed login bug" disabled />
+
+    <label>Hours Worked * (max: 8)</label>
+    <input id="hours" type="number" value="0" min="0" max="8" step="0.5" disabled />
+
+    <div>
+      <button class="btn btn-blue" id="saveBtn" onclick="saveLog()" disabled>💾 Save Log</button>
+      <button class="btn btn-gray" id="summaryBtn" onclick="fetchSummary()" disabled>📊 Fetch Summary</button>
+    </div>
+
+    <div id="msg"></div>
+  </div>
+
+  <div class="card" id="summaryCard">
+    <h3>Today's Summary</h3>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="sEmp">0</div>
+        <div class="stat-lbl">Employees</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="sHours">0</div>
+        <div class="stat-lbl">Total Hrs</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="sAvg">0</div>
+        <div class="stat-lbl">Avg Hrs</div>
+      </div>
+    </div>
+    <div id="warnBox" class="warn-box"></div>
+  </div>
+
+</div>
+
+<script>
+  // URLs loaded from Flask /config (which reads from Key Vault via env vars)
+  let SAVE_LOG_URL      = "";
+  let GET_SUMMARY_URL   = "";
+
+  async function loadConfig() {
+    try {
+      const res    = await fetch("/config");
+      const config = await res.json();
+
+      SAVE_LOG_URL    = config.saveLogUrl;
+      GET_SUMMARY_URL = config.getSummaryUrl;
+
+      if (!SAVE_LOG_URL || !GET_SUMMARY_URL) {
+        throw new Error("URLs missing from config");
+      }
+
+      // Enable UI after config loaded
+      document.getElementById("loadingBanner").style.display = "none";
+      ["empName", "empId", "task", "hours", "saveBtn", "summaryBtn"]
+        .forEach(id => document.getElementById(id).disabled = false);
+
+    } catch (err) {
+      document.getElementById("loadingBanner").textContent =
+        "❌ Failed to load config. Check Key Vault and environment variables.";
+      document.getElementById("loadingBanner").style.background = "#fee2e2";
+      document.getElementById("loadingBanner").style.color = "#991b1b";
+    }
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById("msg");
+    el.textContent = text;
+    el.className = type === "ok" ? "ok" : "err";
+    setTimeout(() => { el.className = ""; }, 5000);
+  }
+
+  async function saveLog() {
+    const name  = document.getElementById("empName").value.trim();
+    const id    = document.getElementById("empId").value.trim();
+    const task  = document.getElementById("task").value.trim();
+    const hours = document.getElementById("hours").value;
+
+    if (!name || !id || !task) {
+      showMsg("All fields are required.", "err");
+      return;
+    }
+
+    const btn = document.getElementById("saveBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const res = await fetch(SAVE_LOG_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeName: name,
+          employeeId: id,
+          taskCompleted: task,
+          hoursWorked: hours
+        })
+      });
+      const text = await res.text();
+      showMsg(text, res.ok ? "ok" : "err");
+      if (res.ok) {
+        document.getElementById("empName").value = "";
+        document.getElementById("empId").value   = "";
+        document.getElementById("task").value    = "";
+        document.getElementById("hours").value   = "0";
+      }
+    } catch {
+      showMsg("Could not connect to Function App.", "err");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "💾 Save Log";
+    }
+  }
+
+  async function fetchSummary() {
+    const btn = document.getElementById("summaryBtn");
+    btn.disabled = true;
+    btn.textContent = "Loading...";
+
+    try {
+      const res  = await fetch(GET_SUMMARY_URL);
+      const data = await res.json();
+
+      document.getElementById("sEmp").textContent   = data.totalEmployees;
+      document.getElementById("sHours").textContent = data.totalHours + "h";
+      document.getElementById("sAvg").textContent   = data.avgHours + "h";
+
+      const warnBox = document.getElementById("warnBox");
+      if (data.underFourHours && data.underFourHours.length > 0) {
+        warnBox.style.display = "block";
+        warnBox.textContent = "⚠ Under 4 hrs today: " + data.underFourHours.join(", ");
+      } else {
+        warnBox.style.display = "none";
+      }
+
+      document.getElementById("summaryCard").className = "card show";
+    } catch {
+      showMsg("Could not fetch summary.", "err");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "📊 Fetch Summary";
+    }
+  }
+
+  // Load config on page load
+  loadConfig();
+</script>
+</body>
+</html>
